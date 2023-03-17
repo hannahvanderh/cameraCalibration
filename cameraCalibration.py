@@ -121,10 +121,14 @@ while cap.isOpened():
     frameCount+=1
     gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 
-    bodies = frameData[args.initialFrame + frameCount]["bodies"]
-    for body in bodies:
-        for joint in body["joint_positions"]:
-            cv2.circle(frame, (int(joint[0]),int(joint[1])), radius=5, color=(0, 0, 255), thickness=-1)
+    if calibrated:
+        bodies = frameData[args.initialFrame + frameCount]["bodies"]
+        for body in bodies:
+            for joint in body["joint_positions"]:
+                points_2d, _ = cv2.projectPoints(np.array(joint), np.array([0.0,0.0,0.0]), np.array([0.0,0.0,0.0]), cameraMatrix, dist)
+                print(points_2d)
+                print("width " + str(w) + " height " + str(h))
+                cv2.circle(frame, (int(points_2d[0][0][0]),int(points_2d[0][0][1])), radius=5, color=(0, 0, 255), thickness=-1)
 
     if not calibrated:
         # Find the chess board corners
@@ -149,9 +153,9 @@ while cap.isOpened():
         break
 
     if frameCount % 20 == 0 and not calibrated:
-        ret, mtx, dist, rvecs, tvecs = cv2.calibrateCamera(objpoints, imgpoints, (w, h), None, None)
+        ret, cameraMatrix, dist, rvecs, tvecs = cv2.calibrateCamera(objpoints, imgpoints, (w, h), None, None)
         print(ret)
-        print(mtx)
+        print(cameraMatrix)
         print(dist)
         print(rvecs)
         print(tvecs)
