@@ -90,6 +90,7 @@ skeletonData = json.load(jsonFile)
 frameData = skeletonData["frames"]
 
 _, frame = cap.read()
+frame = cv2.resize(frame, (960, 540)) 
 h, w, c = frame.shape
 frameCount = 0
 
@@ -118,6 +119,7 @@ while cap.isOpened():
         print("Ignoring empty camera frame.")
         continue
 
+    frame = cv2.resize(frame, (960, 540)) 
     frameCount+=1
     gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 
@@ -128,7 +130,8 @@ while cap.isOpened():
                 points_2d, _ = cv2.projectPoints(np.array(joint), np.array([0.0,0.0,0.0]), np.array([0.0,0.0,0.0]), cameraMatrix, dist)
                 print(points_2d)
                 print("width " + str(w) + " height " + str(h))
-                cv2.circle(frame, (int(points_2d[0][0][0]),int(points_2d[0][0][1])), radius=5, color=(0, 0, 255), thickness=-1)
+                shift = 7
+                cv2.circle(frame, (int(points_2d[0][0][0] * 2**shift),int(points_2d[0][0][1] * 2**shift)), radius=5, color=(0, 0, 255), thickness=5, shift=shift)
 
     if not calibrated:
         # Find the chess board corners
@@ -137,7 +140,8 @@ while cap.isOpened():
         ret, corners = cv2.findChessboardCorners(gray, GRID, cv2.CALIB_CB_ADAPTIVE_THRESH + cv2.CALIB_CB_FAST_CHECK + cv2.CALIB_CB_NORMALIZE_IMAGE)
         if ret == True:
             # refining pixel coordinates for given 2d points.
-            corners2 = cv2.cornerSubPix(gray, corners, (11,11),(-1,-1), criteria)
+            # https://theailearner.com/tag/cv2-cornersubpix/ - window size
+            corners2 = cv2.cornerSubPix(gray, corners, (1,1), (-1,-1), criteria)
             
             imgpoints.append(corners2)
             objpoints.append(objp)
