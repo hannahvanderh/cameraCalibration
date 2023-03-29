@@ -33,7 +33,7 @@ criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 30, 0.001)
  
 rows = 6 #number of checkerboard rows.
 columns = 9 #number of checkerboard columns.
-world_scaling = 1. #change this to the real world square size. Or not.
+world_scaling = 0.015 #change this to the real world square size. Or not.
  
 #coordinates of squares in the checkerboard world space
 objp = np.zeros((rows*columns,3), np.float32)
@@ -71,7 +71,7 @@ for frame in images:
         img = cv2.drawChessboardCorners(frame, GRID, corners2, ret)
 
     cv2.imshow("Frame", frame)
-    if cv2.waitKey(10) == ord('q'):
+    if cv2.waitKey(100) == ord('q'):
         break
 
 if not calibrated:

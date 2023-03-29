@@ -1,3 +1,4 @@
+# based off example in this blog: https://temugeb.github.io/opencv/python/2021/02/02/stereo-camera-calibration-and-triangulation.html
 import argparse
 import cv2
 import numpy as np
@@ -31,7 +32,7 @@ criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 30, 0.001)
  
 rows = 6 #number of checkerboard rows.
 columns = 9 #number of checkerboard columns.
-world_scaling = 1. #change this to the real world square size. Or not.
+world_scaling = 0.015 #change this to the real world square size. Or not.
  
 #coordinates of squares in the checkerboard world space
 objp = np.zeros((rows*columns,3), np.float32)
@@ -55,6 +56,7 @@ while cap.isOpened():
     gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 
     if calibrated:
+        #frame = cv2.undistort(frame, cameraMatrix, dist, None, None)
         bodies = frameData[args.initialFrame + frameCount]["bodies"]
         for body in bodies:
             for joint in body["joint_positions"]:
