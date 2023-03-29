@@ -1,4 +1,4 @@
-# based off example in this blog: https://temugeb.github.io/opencv/python/2021/02/02/stereo-camera-calibration-and-triangulation.html
+# based off example on this blog: https://temugeb.github.io/opencv/python/2021/02/02/stereo-camera-calibration-and-triangulation.html
 import argparse
 import cv2
 import numpy as np
