@@ -1,0 +1,6 @@
+stereo calibration: https://docs.opencv.org/2.4/modules/calib3d/doc/camera_calibration_and_3d_reconstruction.html#double%20stereoCalibrate(InputArrayOfArrays%20objectPoints,%20InputArrayOfArrays%20imagePoints1,%20InputArrayOfArrays%20imagePoints2,%20InputOutputArray%20cameraMatrix1,%20InputOutputArray%20distCoeffs1,%20InputOutputArray%20cameraMatrix2,%20InputOutputArray%20distCoeffs2,%20Size%20imageSize,%20OutputArray%20R,%20OutputArray%20T,%20OutputArray%20E,%20OutputArray%20F,%20TermCriteria%20criteria,%20int%20flags)
+https://temugeb.github.io/opencv/python/2021/02/02/stereo-camera-calibration-and-triangulation.html
+
+0x000000a39cafe4c0 {0.999995291, 0.00136006961, 0.00276047550, -0.00161223591, 0.995617449, 0.0935053304, ...}
+
+0x0000005cf97beb40 {0.999995291, 0.00136006961, 0.00276047550, -0.00161223591, 0.995617449, 0.0935053304, ...}
