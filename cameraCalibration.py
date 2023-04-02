@@ -1,20 +1,79 @@
 import argparse
 import cv2
 import numpy as np
-import matplotlib.pyplot as plt
 import json
+from enum import Enum
+
+class Joint(Enum):
+        PELVIS = 0
+        SPINE_NAVEL = 1
+        SPINE_CHEST = 2
+        NECK = 3
+        CLAVICLE_LEFT = 4
+        SHOULDER_LEFT = 5
+        ELBOW_LEFT = 6
+        WRIST_LEFT = 7
+        HAND_LEFT = 8
+        HANDTIP_LEFT = 9
+        THUMB_LEFT = 10
+        CLAVICLE_RIGHT = 11
+        SHOULDER_RIGHT = 12
+        ELBOW_RIGHT = 13
+        WRIST_RIGHT = 14
+        HAND_RIGHT = 15
+        HANDTIP_RIGHT = 16
+        THUMB_RIGHT = 17
+        HIP_LEFT = 18
+        KNEE_LEFT = 19
+        ANKLE_LEFT = 20
+        FOOT_LEFT = 21
+        HIP_RIGHT = 22
+        KNEE_RIGHT = 23
+        ANKLE_RIGHT = 24
+        FOOT_RIGHT = 25
+        HEAD = 26
+        NOSE = 27
+        EYE_LEFT = 28
+        EAR_LEFT = 29
+        EYE_RIGHT = 30
+        EAR_RIGHT = 31
+
+class BodyCategory(Enum):
+        HEAD = 0
+        RIGHT_ARM = 1
+        LEFT_ARM = 2
+        TORSO = 3
+        RIGHT_LEG = 4
+        LEFT_LEG = 4
+
+def getPointSubcategory(joint):
+     if(joint == Joint.PELVIS or joint == Joint.NECK or joint == Joint.SPINE_NAVEL or joint == Joint.SPINE_CHEST):
+          return BodyCategory.TORSO
+     if(joint == Joint.CLAVICLE_LEFT or joint == Joint.SHOULDER_LEFT or joint == Joint.ELBOW_LEFT 
+        or joint == Joint.WRIST_LEFT or joint == Joint.HAND_LEFT or joint == Joint.HANDTIP_LEFT or joint == Joint.THUMB_LEFT):
+          return BodyCategory.LEFT_ARM
+     if(joint == Joint.CLAVICLE_RIGHT or joint == Joint.SHOULDER_RIGHT or joint == Joint.ELBOW_RIGHT 
+        or joint == Joint.WRIST_RIGHT or joint == Joint.HAND_RIGHT or joint == Joint.HANDTIP_RIGHT or joint == Joint.THUMB_RIGHT):
+          return BodyCategory.RIGHT_ARM
+     if(joint == Joint.HIP_LEFT or joint == Joint.KNEE_LEFT or joint == Joint.ANKLE_LEFT or joint == Joint.FOOT_LEFT):
+          return BodyCategory.LEFT_LEG
+     if(joint == Joint.HIP_RIGHT or joint == Joint.KNEE_RIGHT or joint == Joint.ANKLE_RIGHT or joint == Joint.FOOT_RIGHT):
+          return BodyCategory.RIGHT_LEG
+     if(joint == Joint.HEAD or joint == Joint.NOSE or joint == Joint.EYE_LEFT 
+        or joint == Joint.EAR_LEFT or joint == Joint.EYE_RIGHT or joint == Joint.EAR_RIGHT):
+          return BodyCategory.HEAD
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--videoPath', nargs='?', default="E:\\output\\Data\\Group_09-sub2.mkv")
-parser.add_argument('--jsonPath', nargs='?', default="E:\\output\\Data\\Group_09-sub2.json")
+parser.add_argument('--videoPath', nargs='?', default="E:\\output\\Data\\")
+parser.add_argument('--fileName', nargs='?', default="Group_08-master")
 parser.add_argument('--initialFrame', nargs='?', default=130)
 
 args = parser.parse_args()
 
 # file
-cap = cv2.VideoCapture(args.videoPath)
+cap = cv2.VideoCapture("{}{}.mkv".format(args.videoPath, args.fileName))
 cap.set(cv2.CAP_PROP_POS_FRAMES, args.initialFrame)
-jsonFile = open(args.jsonPath)
+jsonFile = open("{}{}.json".format(args.videoPath, args.fileName))
 
 skeletonData = json.load(jsonFile)
 frameData = skeletonData["frames"]
@@ -44,6 +103,7 @@ if(cameraCalibration != None):
 _, frame = cap.read()
 h, w, c = frame.shape
 frameCount = 0
+shift = 7
 
 while cap.isOpened():
     success, frame = cap.read()
@@ -57,17 +117,25 @@ while cap.isOpened():
     if cameraCalibration != None:
         bodies = frameData[args.initialFrame + frameCount]["bodies"]
         for body in bodies:
-            for joint in body["joint_positions"]:
-                points_2d, _ = cv2.projectPoints(
-                    np.array(joint), 
-                    rotation,
-                    translation,
-                    cameraMatrix,
-                    dist)
-                
-                print(points_2d)
-                shift = 7
-                cv2.circle(frame, (int(points_2d[0][0][0] * 2**shift),int(points_2d[0][0][1] * 2**shift)), radius=5, color=(0, 0, 255), thickness=10, shift=shift)
+            for index, joint in enumerate(body["joint_positions"]):
+                bodyLocation = getPointSubcategory(Joint(index))
+                if(bodyLocation != BodyCategory.RIGHT_LEG and bodyLocation != BodyCategory.LEFT_LEG):
+                    points2D, _ = cv2.projectPoints(
+                        np.array(joint), 
+                        rotation,
+                        translation,
+                        cameraMatrix,
+                        dist)  
+
+                    #BGR
+                    color = (0, 0, 255) #TORSO
+                    if(bodyLocation == BodyCategory.RIGHT_ARM):
+                         color =  (0, 255, 0) 
+                    if(bodyLocation == BodyCategory.LEFT_ARM):
+                         color =  (0, 140, 255) 
+                    if(bodyLocation == BodyCategory.HEAD):
+                         color =  (255, 0, 0) 
+                    cv2.circle(frame, (int(points2D[0][0][0] * 2**shift),int(points2D[0][0][1] * 2**shift)), radius=5, color=color, thickness=10, shift=shift)
 
     cv2.putText(frame, "Frame: " + str(frameCount + args.initialFrame), (50,50), cv2.FONT_HERSHEY_SIMPLEX, 1, (0,0,255), 2, cv2.LINE_AA)
     frame = cv2.resize(frame, (960, 540))
