@@ -63,6 +63,101 @@ def getPointSubcategory(joint):
         or joint == Joint.EAR_LEFT or joint == Joint.EYE_RIGHT or joint == Joint.EAR_RIGHT):
           return BodyCategory.HEAD
 
+bone_list = [
+        [
+            Joint.SPINE_CHEST, 
+            Joint.SPINE_NAVEL
+        ],
+        [
+            Joint.SPINE_NAVEL,
+            Joint.PELVIS
+        ],
+        [
+            Joint.SPINE_CHEST,
+            Joint.NECK
+        ],
+        [
+            Joint.NECK,
+            Joint.HEAD
+        ],
+        [
+            Joint.HEAD,
+            Joint.NOSE
+        ],
+        [
+            Joint.SPINE_CHEST,
+            Joint.CLAVICLE_LEFT
+        ],
+        [
+            Joint.CLAVICLE_LEFT,
+            Joint.SHOULDER_LEFT
+        ],
+        [
+            Joint.SHOULDER_LEFT,
+            Joint.ELBOW_LEFT
+        ],
+        [
+            Joint.ELBOW_LEFT,
+            Joint.WRIST_LEFT
+        ],
+        [
+            Joint.WRIST_LEFT,
+            Joint.HAND_LEFT
+        ],
+        [
+            Joint.HAND_LEFT,
+            Joint.HANDTIP_LEFT
+        ],
+        [
+            Joint.WRIST_LEFT,
+            Joint.THUMB_LEFT
+        ],
+        [
+            Joint.NOSE,
+            Joint.EYE_LEFT
+        ],
+        [
+            Joint.EYE_LEFT,
+            Joint.EAR_LEFT
+        ],
+        [
+            Joint.SPINE_CHEST,
+            Joint.CLAVICLE_RIGHT
+        ],
+        [
+            Joint.CLAVICLE_RIGHT,
+            Joint.SHOULDER_RIGHT
+        ],
+        [
+            Joint.SHOULDER_RIGHT,
+            Joint.ELBOW_RIGHT
+        ],
+        [
+            Joint.ELBOW_RIGHT,
+            Joint.WRIST_RIGHT
+        ],
+        [
+            Joint.WRIST_RIGHT,
+            Joint.HAND_RIGHT
+        ],
+        [
+            Joint.HAND_RIGHT,
+            Joint.HANDTIP_RIGHT
+        ],
+        [
+            Joint.WRIST_RIGHT,
+            Joint.THUMB_RIGHT
+        ],
+        [
+            Joint.NOSE,
+            Joint.EYE_RIGHT
+        ],
+        [
+            Joint.EYE_RIGHT,
+            Joint.EAR_RIGHT
+        ]
+]
+
 parser = argparse.ArgumentParser()
 parser.add_argument('--videoPath', nargs='?', default="E:\\output\\Data\\")
 parser.add_argument('--fileName', nargs='?', default="Group_08-master")
@@ -78,6 +173,7 @@ jsonFile = open("{}{}.json".format(args.videoPath, args.fileName))
 skeletonData = json.load(jsonFile)
 frameData = skeletonData["frames"]
 cameraCalibration = skeletonData["camera_calibration"]
+colors = [(0, 0, 255), (0, 255, 0), (0, 140, 255), (255, 0, 0)]
 
 if(cameraCalibration != None):
     cameraMatrix = np.array([np.array([float(cameraCalibration["fx"]),0,float(cameraCalibration["cx"])]), 
@@ -117,8 +213,9 @@ while cap.isOpened():
     if cameraCalibration != None:
         bodies = frameData[args.initialFrame + frameCount]["bodies"]
         for body in bodies:
-            for index, joint in enumerate(body["joint_positions"]):
-                bodyLocation = getPointSubcategory(Joint(index))
+            dictionary = {}
+            for jointIndex, joint in enumerate(body["joint_positions"]):
+                bodyLocation = getPointSubcategory(Joint(jointIndex))
                 if(bodyLocation != BodyCategory.RIGHT_LEG and bodyLocation != BodyCategory.LEFT_LEG):
                     points2D, _ = cv2.projectPoints(
                         np.array(joint), 
@@ -126,16 +223,13 @@ while cap.isOpened():
                         translation,
                         cameraMatrix,
                         dist)  
-
-                    #BGR
-                    color = (0, 0, 255) #TORSO
-                    if(bodyLocation == BodyCategory.RIGHT_ARM):
-                         color =  (0, 255, 0) 
-                    if(bodyLocation == BodyCategory.LEFT_ARM):
-                         color =  (0, 140, 255) 
-                    if(bodyLocation == BodyCategory.HEAD):
-                         color =  (255, 0, 0) 
-                    cv2.circle(frame, (int(points2D[0][0][0] * 2**shift),int(points2D[0][0][1] * 2**shift)), radius=5, color=color, thickness=10, shift=shift)
+                    
+                    point = (int(points2D[0][0][0] * 2**shift),int(points2D[0][0][1] * 2**shift))
+                    dictionary[Joint(jointIndex)] = point
+                    #cv2.circle(frame, point, radius=5, color=colors[int(body["body_id"]) - 1], thickness=10, shift=shift)
+            for bone in bone_list:
+                 cv2.line(frame, dictionary[bone[0]], dictionary[bone[1]], color=colors[int(body["body_id"]) - 1], thickness=10, shift=shift)
+                 
 
     cv2.putText(frame, "Frame: " + str(frameCount + args.initialFrame), (50,50), cv2.FONT_HERSHEY_SIMPLEX, 1, (0,0,255), 2, cv2.LINE_AA)
     frame = cv2.resize(frame, (960, 540))
