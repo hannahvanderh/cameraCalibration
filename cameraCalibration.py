@@ -159,21 +159,26 @@ bone_list = [
 ]
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--videoPath', nargs='?', default="E:\\output\\Data\\")
-parser.add_argument('--fileName', nargs='?', default="Group_08-master")
-parser.add_argument('--initialFrame', nargs='?', default=130)
+parser.add_argument('--videoPath', nargs='?', default="F:\\Weights_Task\\Data\\Fib_weights_original_videos\\")
+parser.add_argument('--jsonPath', nargs='?', default="F:\\Weights_Task\\Data\\")
+parser.add_argument('--fileName', nargs='?', default="Group_06-master")
+parser.add_argument('--initialFrame', nargs='?', default=6000)
 
 args = parser.parse_args()
 
 # file
 cap = cv2.VideoCapture("{}{}.mkv".format(args.videoPath, args.fileName))
 cap.set(cv2.CAP_PROP_POS_FRAMES, args.initialFrame)
-jsonFile = open("{}{}.json".format(args.videoPath, args.fileName))
+jsonFile = open("{}{}.json".format(args.jsonPath, args.fileName))
 
 skeletonData = json.load(jsonFile)
 frameData = skeletonData["frames"]
 cameraCalibration = skeletonData["camera_calibration"]
-colors = [(0, 0, 255), (0, 255, 0), (0, 140, 255), (255, 0, 0)]
+
+#BGR
+# Red, Green, Orange, Blue, Purple
+colors = [(0, 0, 255), (0, 255, 0), (0, 140, 255), (255, 0, 0), (139,34,104)]
+dotColor = [(0, 0, 139), (20,128,48), (71,130,255), (205,95,58), (205,150,205)]
 
 if(cameraCalibration != None):
     cameraMatrix = np.array([np.array([float(cameraCalibration["fx"]),0,float(cameraCalibration["cx"])]), 
@@ -216,6 +221,8 @@ while cap.isOpened():
             dictionary = {}
             for jointIndex, joint in enumerate(body["joint_positions"]):
                 bodyLocation = getPointSubcategory(Joint(jointIndex))
+                bodyId = int(body["body_id"])
+                print(f"{bodyId}")
                 if(bodyLocation != BodyCategory.RIGHT_LEG and bodyLocation != BodyCategory.LEFT_LEG):
                     points2D, _ = cv2.projectPoints(
                         np.array(joint), 
@@ -226,9 +233,9 @@ while cap.isOpened():
                     
                     point = (int(points2D[0][0][0] * 2**shift),int(points2D[0][0][1] * 2**shift))
                     dictionary[Joint(jointIndex)] = point
-                    #cv2.circle(frame, point, radius=5, color=colors[int(body["body_id"]) - 1], thickness=10, shift=shift)
+                    cv2.circle(frame, point, radius=15, color=dotColor[bodyId % len(dotColor)], thickness=15, shift=shift)
             for bone in bone_list:
-                 cv2.line(frame, dictionary[bone[0]], dictionary[bone[1]], color=colors[int(body["body_id"]) - 1], thickness=10, shift=shift)
+                 cv2.line(frame, dictionary[bone[0]], dictionary[bone[1]], color=colors[bodyId % len(colors)], thickness=3, shift=shift)
                  
 
     cv2.putText(frame, "Frame: " + str(frameCount + args.initialFrame), (50,50), cv2.FONT_HERSHEY_SIMPLEX, 1, (0,0,255), 2, cv2.LINE_AA)
