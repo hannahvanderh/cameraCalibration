@@ -3,6 +3,7 @@ import cv2
 import numpy as np
 import json
 from enum import Enum
+import mediapipe as mp
 
 class Joint(Enum):
         PELVIS = 0
@@ -159,10 +160,13 @@ bone_list = [
 ]
 
 parser = argparse.ArgumentParser()
+parser.add_argument('--maxHands', nargs='?', default=6)
+parser.add_argument('--minDetectionConfidence', nargs='?', default=0.6)
+parser.add_argument('--minTrackingConfidence', nargs='?', default=0.6)
 parser.add_argument('--videoPath', nargs='?', default="F:\\Weights_Task\\Data\\Fib_weights_original_videos\\")
 parser.add_argument('--jsonPath', nargs='?', default="F:\\Weights_Task\\Data\\")
-parser.add_argument('--fileName', nargs='?', default="Group_06-master")
-parser.add_argument('--initialFrame', nargs='?', default=6000)
+parser.add_argument('--fileName', nargs='?', default="Group_03-sub1")
+parser.add_argument('--initialFrame', nargs='?', default=7000)
 
 args = parser.parse_args()
 
@@ -178,7 +182,7 @@ cameraCalibration = skeletonData["camera_calibration"]
 #BGR
 # Red, Green, Orange, Blue, Purple
 colors = [(0, 0, 255), (0, 255, 0), (0, 140, 255), (255, 0, 0), (139,34,104)]
-dotColor = [(0, 0, 139), (20,128,48), (71,130,255), (205,95,58), (205,150,205)]
+dotColor = [(0, 0, 139), (20,128,48), (71,130,170), (205,95,58), (205,150,205)]
 
 if(cameraCalibration != None):
     cameraMatrix = np.array([np.array([float(cameraCalibration["fx"]),0,float(cameraCalibration["cx"])]), 
@@ -206,6 +210,10 @@ h, w, c = frame.shape
 frameCount = 0
 shift = 7
 
+mpHands = mp.solutions.hands
+mpDraw = mp.solutions.drawing_utils
+hands = mpHands.Hands(max_num_hands=args.maxHands, min_detection_confidence=args.minDetectionConfidence, min_tracking_confidence=args.minTrackingConfidence)
+
 while cap.isOpened():
     success, frame = cap.read()
     if not success:
@@ -214,28 +222,43 @@ while cap.isOpened():
 
     frameCount+=1
     gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+    framergb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
 
-    if cameraCalibration != None:
-        bodies = frameData[args.initialFrame + frameCount]["bodies"]
-        for body in bodies:
-            dictionary = {}
-            for jointIndex, joint in enumerate(body["joint_positions"]):
-                bodyLocation = getPointSubcategory(Joint(jointIndex))
-                bodyId = int(body["body_id"])
-                print(f"{bodyId}")
-                if(bodyLocation != BodyCategory.RIGHT_LEG and bodyLocation != BodyCategory.LEFT_LEG):
-                    points2D, _ = cv2.projectPoints(
-                        np.array(joint), 
-                        rotation,
-                        translation,
-                        cameraMatrix,
-                        dist)  
+    result_hands = hands.process(framergb)
+    if result_hands.multi_hand_landmarks:
+        landmarks = []
+        for index, handslms in enumerate(result_hands.multi_hand_landmarks):
+            for lm in handslms.landmark:
+                # print(id, lm)
+                lmx = int(lm.x * w)
+                lmy = int(lm.y * h)
+
+                landmarks.append([lmx, lmy])
+
+            # Drawing landmarks on frames
+            mpDraw.draw_landmarks(frame, handslms, mpHands.HAND_CONNECTIONS)
+
+    # if cameraCalibration != None:
+    #     bodies = frameData[args.initialFrame + frameCount]["bodies"]
+    #     for body in bodies:
+    #         dictionary = {}
+    #         for jointIndex, joint in enumerate(body["joint_positions"]):
+    #             bodyLocation = getPointSubcategory(Joint(jointIndex))
+    #             bodyId = int(body["body_id"])
+    #             print(f"{bodyId}")
+    #             if(bodyLocation != BodyCategory.RIGHT_LEG and bodyLocation != BodyCategory.LEFT_LEG):
+    #                 points2D, _ = cv2.projectPoints(
+    #                     np.array(joint), 
+    #                     rotation,
+    #                     translation,
+    #                     cameraMatrix,
+    #                     dist)  
                     
-                    point = (int(points2D[0][0][0] * 2**shift),int(points2D[0][0][1] * 2**shift))
-                    dictionary[Joint(jointIndex)] = point
-                    cv2.circle(frame, point, radius=15, color=dotColor[bodyId % len(dotColor)], thickness=15, shift=shift)
-            for bone in bone_list:
-                 cv2.line(frame, dictionary[bone[0]], dictionary[bone[1]], color=colors[bodyId % len(colors)], thickness=3, shift=shift)
+    #                 point = (int(points2D[0][0][0] * 2**shift),int(points2D[0][0][1] * 2**shift))
+    #                 dictionary[Joint(jointIndex)] = point
+    #                 cv2.circle(frame, point, radius=15, color=dotColor[bodyId % len(dotColor)], thickness=15, shift=shift)
+    #         for bone in bone_list:
+    #              cv2.line(frame, dictionary[bone[0]], dictionary[bone[1]], color=colors[bodyId % len(colors)], thickness=3, shift=shift)
                  
 
     cv2.putText(frame, "Frame: " + str(frameCount + args.initialFrame), (50,50), cv2.FONT_HERSHEY_SIMPLEX, 1, (0,0,255), 2, cv2.LINE_AA)
